@@ -1,5 +1,15 @@
 (function () {
-  const INVALID_TITLE_TOKENS = [/\btoday\b/i, /\bpicks\b/i, /\bcategories\b/i, /far from your location/i];
+  const INVALID_TITLE_TOKENS = [
+    /\btoday\b/i,
+    /\bpicks\b/i,
+    /\bcategories\b/i,
+    /far from your location/i,
+    /sponsored/i
+  ];
+
+  function text(el) {
+    return el?.innerText?.trim() || "";
+  }
 
   function parseMoney(value) {
     if (!value) return null;
@@ -7,29 +17,44 @@
     return m ? Number(m[1]) : null;
   }
 
-  function text(el) {
-    return el?.innerText?.trim() || "";
+  function isValidTitle(title) {
+    if (!title || title.length < 5) return false;
+    return !INVALID_TITLE_TOKENS.some((re) => re.test(title));
   }
 
-  function findTitleAndPrice() {
-    const h1 = document.querySelector("h1");
-    if (!h1) return { error: "Listing title not found in header." };
+  function findPriceNearHeader(h1) {
+    const priceRegex = /^\$\s*\d[\d,]*(?:\.\d{2})?$/;
 
-    const title = text(h1);
-    if (title.length < 5 || INVALID_TITLE_TOKENS.some((re) => re.test(title))) {
-      return { error: "Title validation failed (invalid or non-listing text)." };
+    let node = h1;
+    const containers = [];
+    for (let i = 0; i < 7 && node; i += 1) {
+      containers.push(node);
+      node = node.parentElement;
     }
 
-    const scope = h1.closest("div")?.parentElement || document.body;
-    const candidates = Array.from(scope.querySelectorAll("span,div")).map(text).filter(Boolean);
-    const priceText = candidates.find((t) => /^\$\s*\d[\d,]*(?:\.\d{2})?$/.test(t));
-    const price = parseMoney(priceText || "");
+    for (const container of containers) {
+      const elements = Array.from(container.querySelectorAll("span,div")).filter((el) => {
+        const t = text(el);
+        return priceRegex.test(t);
+      });
 
-    if (price == null) {
-      return { error: "Could not locate price next to listing header." };
+      if (!elements.length) continue;
+
+      const ranked = elements
+        .map((el) => {
+          const rect = el.getBoundingClientRect();
+          const headRect = h1.getBoundingClientRect();
+          const dy = Math.abs((rect.top + rect.height / 2) - (headRect.top + headRect.height / 2));
+          const dx = Math.abs((rect.left + rect.width / 2) - (headRect.left + headRect.width / 2));
+          return { el, distance: dy + dx };
+        })
+        .sort((a, b) => a.distance - b.distance);
+
+      const money = parseMoney(text(ranked[0].el));
+      if (money != null) return money;
     }
 
-    return { title, price };
+    return null;
   }
 
   function findLabelValue(labelPattern) {
@@ -37,18 +62,26 @@
     for (const el of all) {
       const t = text(el);
       if (!labelPattern.test(t)) continue;
-      const sib = el.parentElement?.querySelector("span:last-child,div:last-child");
-      const value = text(sib);
-      if (value && value !== t) return value;
+      const parent = el.parentElement;
+      if (!parent) continue;
+
+      const siblings = Array.from(parent.querySelectorAll("span,div")).map(text).filter(Boolean);
+      const value = siblings.find((s) => s !== t && s.length > 1);
+      if (value) return value;
     }
     return "";
   }
 
   function extractDescription() {
-    const section = Array.from(document.querySelectorAll("div,span")).find((el) => /description/i.test(text(el)));
-    if (!section) return "";
-    const parentText = text(section.parentElement);
-    return parentText.replace(/\bdescription\b/i, "").trim();
+    const labels = Array.from(document.querySelectorAll("span,div")).filter((el) => /^description$/i.test(text(el)));
+    for (const label of labels) {
+      const parent = label.parentElement;
+      if (!parent) continue;
+      const bits = Array.from(parent.querySelectorAll("span,div")).map(text).filter(Boolean);
+      const merged = bits.filter((x) => !/^description$/i.test(x)).join(" ").trim();
+      if (merged.length > 3) return merged;
+    }
+    return "";
   }
 
   function extractSellerName() {
@@ -58,34 +91,40 @@
 
   function extractGalleryImages() {
     const images = Array.from(document.querySelectorAll('img[src]'))
-      .filter((img) => {
-        const src = img.getAttribute("src") || "";
-        if (!/scontent|fbcdn/i.test(src)) return false;
-        return img.naturalWidth >= 200 && img.naturalHeight >= 200;
-      })
       .map((img) => ({
-        url: img.src,
-        width: img.naturalWidth,
-        height: img.naturalHeight,
-        area: img.naturalWidth * img.naturalHeight
-      }));
+        url: img.currentSrc || img.src || "",
+        width: img.naturalWidth || 0,
+        height: img.naturalHeight || 0
+      }))
+      .filter((img) => /scontent|fbcdn/i.test(img.url) && img.width >= 200 && img.height >= 200)
+      .map((img) => ({ ...img, area: img.width * img.height }));
 
-    const unique = [];
+    const deduped = [];
     const seen = new Set();
     for (const img of images) {
       if (seen.has(img.url)) continue;
       seen.add(img.url);
-      unique.push(img);
+      deduped.push(img);
     }
 
-    unique.sort((a, b) => b.area - a.area);
-    return unique;
+    deduped.sort((a, b) => b.area - a.area);
+    return deduped;
   }
 
   function collectListingData() {
-    const titlePrice = findTitleAndPrice();
-    if (titlePrice.error) {
-      return { ok: false, error: titlePrice.error };
+    const h1 = document.querySelector("h1");
+    if (!h1) {
+      return { ok: false, error: "Listing header not found." };
+    }
+
+    const title = text(h1);
+    if (!isValidTitle(title)) {
+      return { ok: false, error: "Title validation failed (not a valid listing title)." };
+    }
+
+    const price = findPriceNearHeader(h1);
+    if (price == null) {
+      return { ok: false, error: "Could not locate listing price near header." };
     }
 
     const description = extractDescription();
@@ -97,8 +136,8 @@
     return {
       ok: true,
       data: {
-        title: titlePrice.title,
-        price: titlePrice.price,
+        title,
+        price,
         description,
         condition,
         location,

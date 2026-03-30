@@ -9,7 +9,7 @@ Manifest V3 Chrome extension that analyzes the currently open Facebook Marketpla
 - eBay sold+completed comps parsing and scoring
 - Profit/max buy/offer math (fees + gas + target profit)
 - Negotiation message generation
-- Popup UI with copy buttons and image URL tools
+- Popup UI with copy buttons, image URL tools, and manual override fields when extraction fails
 
 ## Install (Developer Mode)
 
@@ -23,4 +23,4 @@ Manifest V3 Chrome extension that analyzes the currently open Facebook Marketpla
 
 - The extension analyzes only the single listing currently open.
 - It does not auto-message sellers.
-- If title extraction is invalid or comps are missing, popup shows warning and manual override path.
+- If title extraction is invalid or comps are missing, popup shows warning and supports manual override values for title/price/details.

@@ -5,6 +5,15 @@ const distanceInput = document.getElementById("distanceMiles");
 const copyImageUrlBtn = document.getElementById("copyImageUrl");
 const openImageLink = document.getElementById("openImage");
 
+const manualFields = {
+  title: document.getElementById("manualTitle"),
+  price: document.getElementById("manualPrice"),
+  description: document.getElementById("manualDescription"),
+  condition: document.getElementById("manualCondition"),
+  sellerName: document.getElementById("manualSeller"),
+  location: document.getElementById("manualLocation")
+};
+
 let latestImageUrl = "";
 
 function showWarning(msg) {
@@ -34,12 +43,24 @@ async function getActiveTab() {
   return tabs[0];
 }
 
-async function extractListing(tabId) {
-  return chrome.tabs.sendMessage(tabId, { type: "EXTRACT_LISTING" });
-}
-
 async function analyze(payload) {
   return chrome.runtime.sendMessage({ type: "ANALYZE_LISTING", payload });
+}
+
+function manualPayload() {
+  const title = manualFields.title.value.trim();
+  if (!title) return null;
+
+  return {
+    title,
+    price: Number(manualFields.price.value || 0),
+    description: manualFields.description.value.trim(),
+    condition: manualFields.condition.value || "Unknown",
+    location: manualFields.location.value.trim(),
+    sellerName: manualFields.sellerName.value.trim() || "Seller",
+    galleryImages: [],
+    largestImage: ""
+  };
 }
 
 function fillResults(result) {
@@ -66,32 +87,47 @@ function fillResults(result) {
   resultsEl.classList.remove("hidden");
 }
 
+async function extractFromTab(tab) {
+  if (!tab?.id || !tab.url?.includes("facebook.com/marketplace/item/")) {
+    return { ok: false, error: "Open a single Facebook Marketplace item listing first." };
+  }
+
+  try {
+    return await chrome.tabs.sendMessage(tab.id, { type: "EXTRACT_LISTING" });
+  } catch {
+    return { ok: false, error: "Could not connect to listing page. Refresh the listing tab and retry." };
+  }
+}
+
 analyzeBtn.addEventListener("click", async () => {
   clearWarning();
   resultsEl.classList.add("hidden");
 
   try {
     const tab = await getActiveTab();
-    if (!tab?.id || !tab.url?.includes("facebook.com/marketplace/item/")) {
-      showWarning("Open a single Facebook Marketplace item listing first.");
-      return;
-    }
+    const extracted = await extractFromTab(tab);
+    const manual = manualPayload();
 
-    const listing = await extractListing(tab.id);
-    if (!listing?.ok) {
-      showWarning(listing?.error || "Failed to extract listing fields.");
+    let listing;
+    if (extracted?.ok) {
+      listing = extracted.data;
+    } else if (manual) {
+      listing = manual;
+      showWarning(`${extracted?.error || "Auto extraction failed"} Using manual override values.`);
+    } else {
+      showWarning(`${extracted?.error || "Failed to extract listing."} Add manual Title to continue.`);
       return;
     }
 
     const distanceMiles = Math.max(0, Number(distanceInput.value || 0));
-    const analysis = await analyze({ ...listing.data, distanceMiles });
+    const analysis = await analyze({ ...listing, distanceMiles });
 
     if (!analysis?.ok) {
       const base = analysis?.warning || "No comps found. Use manual overrides.";
       showWarning(base);
       if (analysis?.derived) {
         fillResults({
-          detectedTitle: listing.data.title,
+          detectedTitle: listing.title,
           normalizedTitle: analysis.derived.normalizedTitle,
           size: analysis.derived.size,
           condition: analysis.derived.condition,
@@ -101,7 +137,8 @@ analyzeBtn.addEventListener("click", async () => {
           openingOffer: null,
           finalOffer: null,
           dealRating: "Unknown",
-          messages: {}
+          messages: {},
+          largestImage: listing.largestImage || ""
         });
       }
       return;

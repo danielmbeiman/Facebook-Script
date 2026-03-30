@@ -16,6 +16,27 @@
         <input id="distanceMiles" type="number" min="0" step="1" value="0" />
       </section>
 
+      <details>
+        <summary>Manual override (use if extraction fails)</summary>
+        <section class="manualGrid">
+          <label>Title <input id="manualTitle" type="text" placeholder="Jordan 4 Bred men's size 10" /></label>
+          <label>Price <input id="manualPrice" type="number" min="0" step="0.01" placeholder="120" /></label>
+          <label>Description <textarea id="manualDescription"></textarea></label>
+          <label>Condition
+            <select id="manualCondition">
+              <option value="">Auto/Unknown</option>
+              <option>New</option>
+              <option>Like New</option>
+              <option>Used - Good</option>
+              <option>Used - Fair</option>
+              <option>Beat</option>
+            </select>
+          </label>
+          <label>Seller Name <input id="manualSeller" type="text" placeholder="Seller" /></label>
+          <label>Location <input id="manualLocation" type="text" /></label>
+        </section>
+      </details>
+
       <section class="row actions">
         <button id="analyzeBtn">Analyze Open Listing</button>
       </section>
