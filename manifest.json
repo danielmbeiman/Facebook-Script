@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Marketplace Resale Assistant",
+  "version": "1.0.0",
+  "description": "Analyze an open Facebook Marketplace listing and estimate resale value from eBay sold comps.",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": [
+    "https://www.facebook.com/*",
+    "https://www.ebay.com/*"
+  ],
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.facebook.com/marketplace/item/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Resale Assistant"
+  }
+}

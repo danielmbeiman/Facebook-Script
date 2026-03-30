@@ -1,0 +1,59 @@
+body {
+  font-family: Arial, sans-serif;
+  width: 420px;
+  margin: 0;
+  color: #111;
+}
+main {
+  padding: 12px;
+}
+h1 {
+  font-size: 16px;
+  margin: 0 0 10px;
+}
+h2 {
+  font-size: 14px;
+  margin: 12px 0 6px;
+}
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.actions button {
+  width: 100%;
+}
+.warning {
+  background: #ffefc2;
+  border: 1px solid #efc562;
+  color: #5e480f;
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+.hidden {
+  display: none;
+}
+.kv {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 8px;
+  margin: 4px 0;
+}
+.kv strong {
+  overflow-wrap: anywhere;
+}
+.messageBlock {
+  margin: 6px 0;
+}
+.messageBlock textarea {
+  width: 100%;
+  min-height: 46px;
+  resize: vertical;
+}
+.imageTools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
