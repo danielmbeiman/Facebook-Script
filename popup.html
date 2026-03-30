@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Resale Assistant</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Marketplace Resale Assistant</h1>
+      <div id="warning" class="warning hidden"></div>
+
+      <section class="row">
+        <label>Distance (miles)</label>
+        <input id="distanceMiles" type="number" min="0" step="1" value="0" />
+      </section>
+
+      <details>
+        <summary>Manual override (use if extraction fails)</summary>
+        <section class="manualGrid">
+          <label>Title <input id="manualTitle" type="text" placeholder="Jordan 4 Bred men's size 10" /></label>
+          <label>Price <input id="manualPrice" type="number" min="0" step="0.01" placeholder="120" /></label>
+          <label>Description <textarea id="manualDescription"></textarea></label>
+          <label>Condition
+            <select id="manualCondition">
+              <option value="">Auto/Unknown</option>
+              <option>New</option>
+              <option>Like New</option>
+              <option>Used - Good</option>
+              <option>Used - Fair</option>
+              <option>Beat</option>
+            </select>
+          </label>
+          <label>Seller Name <input id="manualSeller" type="text" placeholder="Seller" /></label>
+          <label>Location <input id="manualLocation" type="text" /></label>
+        </section>
+      </details>
+
+      <section class="row actions">
+        <button id="analyzeBtn">Analyze Open Listing</button>
+      </section>
+
+      <section id="results" class="hidden">
+        <div class="kv"><span>Detected Title</span><strong id="detectedTitle"></strong></div>
+        <div class="kv"><span>Normalized Title</span><strong id="normalizedTitle"></strong></div>
+        <div class="kv"><span>Size</span><strong id="size"></strong></div>
+        <div class="kv"><span>Condition</span><strong id="condition"></strong></div>
+        <div class="kv"><span>eBay Query</span><strong id="ebayQuery"></strong></div>
+        <div class="kv"><span>Resale Estimate</span><strong id="estimatedResale"></strong></div>
+        <div class="kv"><span>Max Buy</span><strong id="maxBuy"></strong></div>
+        <div class="kv"><span>Opening Offer</span><strong id="openingOffer"></strong></div>
+        <div class="kv"><span>Final Offer</span><strong id="finalOffer"></strong></div>
+        <div class="kv"><span>Deal Rating</span><strong id="dealRating"></strong></div>
+
+        <h2>Messages</h2>
+        <div class="messageBlock">
+          <textarea id="msgFriendly" readonly></textarea>
+          <button data-copy="msgFriendly">Copy Friendly</button>
+        </div>
+        <div class="messageBlock">
+          <textarea id="msgBalanced" readonly></textarea>
+          <button data-copy="msgBalanced">Copy Balanced</button>
+        </div>
+        <div class="messageBlock">
+          <textarea id="msgFirm" readonly></textarea>
+          <button data-copy="msgFirm">Copy Firm</button>
+        </div>
+        <div class="messageBlock">
+          <textarea id="msgDistance" readonly></textarea>
+          <button data-copy="msgDistance">Copy Distance</button>
+        </div>
+
+        <h2>Images</h2>
+        <div class="imageTools">
+          <a id="openImage" target="_blank" rel="noreferrer">Open Largest Image</a>
+          <button id="copyImageUrl">Copy Image URL</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
